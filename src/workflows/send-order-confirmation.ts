@@ -89,8 +89,8 @@ const step3 = createStep("step-3", async (data:any) => {
     
 
  
-  const accountSid = 'AC4c29a215936196ecfb7cfbec473faec5';
-  const authToken = 'fd658282d1b2d570d2a7658b13fbae8b';
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
   const client = require('twilio')(accountSid, authToken);
   const messageForUser = `Ваш заказ был успешно оформлен. Выбранная вами дата и время доставки: ${data.data.result.shipping_methods[0].data.deliveryDate}, ${data.data.result.shipping_methods[0].data.deliveryTime}. В скором времени мы свяжемся с вами для подверждения заказа. Спасибо за покупку!`;
 
