@@ -83,27 +83,7 @@ ${data.data.result.shipping_methods[0].shipping_option_id === "so_01JCKDY5CCK7FZ
 
 
 // ---------------------------------------------------------------------
-//    создаем шаг второй. тут будет происходить отправка уведомления в  телеграм
 
-// const step3 = createStep("step-3", async (data:any) => {
-    
-
- 
-//   const accountSid = process.env.TWILIO_ACCOUNT_SID;
-//   const authToken = process.env.TWILIO_AUTH_TOKEN;
-//   const client = require('twilio')(accountSid, authToken);
-//   const messageForUser = `Ваш заказ был успешно оформлен. Выбранная вами дата и время доставки: ${data.data.result.shipping_methods[0].data.deliveryDate}, ${data.data.result.shipping_methods[0].data.deliveryTime}. В скором времени мы свяжемся с вами для подверждения заказа. Спасибо за покупку!`;
-
-
-//   client.messages
-//       .create({
-//               body: messageForUser,
-//               from: '+17753078767',
-//                to: '+994555948901'
-//       })
-//       .then(message => console.log(message.sid))
-//       .done(() => console.log("daone"));
-// })
 
 
 // ---------------------------------------------------------------------
