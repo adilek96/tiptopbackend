@@ -77,24 +77,17 @@ async function addVariantImage(
   next()
 }
 
+// Маршруты отключены вместе с модулем variant-image (см. medusa-config.ts):
+// без него req.scope.resolve падает на каждом запросе к товарам и засоряет
+// логи. Вернуть, когда модуль будет переписан на metadata вариации.
 export default defineMiddlewares({
-  routes: [
-    {
-      matcher: /^\/admin\/products\/.*\/variants/,
-      middlewares: [addVariantImage],
-    },
-    {
-      matcher: /^\/store\/products\/.*\/variants/,
-      middlewares: [addVariantImage],
-    },
-    {
-      matcher: /^\/admin\/products\/.*$/,
-      middlewares: [addVariantImage],
-    },
-    {
-      matcher: /^\/store\/products\/.*$/,
-      middlewares: [addVariantImage],
-    },
-  ],
+  routes: [],
 })
+
+// Прежняя регистрация:
+//   { matcher: /^\/admin\/products\/.*\/variants/, middlewares: [addVariantImage] },
+//   { matcher: /^\/store\/products\/.*\/variants/, middlewares: [addVariantImage] },
+//   { matcher: /^\/admin\/products\/.*$/,          middlewares: [addVariantImage] },
+//   { matcher: /^\/store\/products\/.*$/,          middlewares: [addVariantImage] },
+void addVariantImage
 

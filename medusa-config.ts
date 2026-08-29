@@ -1,5 +1,5 @@
 import { loadEnv, defineConfig } from '@medusajs/framework/utils'
-import { VARIANT_IMAGE_MODULE } from './src/modules/variant-image'
+// import { VARIANT_IMAGE_MODULE } from './src/modules/variant-image'
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
@@ -66,8 +66,20 @@ module.exports = defineConfig({
         ],
       },
     },
-    {
-      resolve: "./src/modules/variant-image",
-    },
+    // Модуль variant-image отключён: он не запускается.
+    //
+    // 1. В конструкторе сервиса awilix передаёт прокси, поэтому
+    //    container.resolve(...) ищет регистрацию с именем "resolve"
+    //    и валит загрузку всего приложения.
+    // 2. Даже если это починить, сервис вызывает у файлового модуля
+    //    методы update/list/delete, которых в Medusa 2.0 нет
+    //    (есть createFiles/deleteFiles/retrieveFile/listFiles), а метаданные
+    //    у файлов не хранятся вовсе.
+    //
+    // Рабочий вариант — держать ссылку на картинку в metadata самой вариации
+    // товара, а не в метаданных файла. Это переделка, а не правка одной строки.
+    // {
+    //   resolve: "./src/modules/variant-image",
+    // },
   ],
 })
