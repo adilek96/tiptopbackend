@@ -68,3 +68,30 @@ Join our [Discord server](https://discord.com/invite/medusajs) to meet other com
 - [Twitter](https://twitter.com/medusajs)
 - [LinkedIn](https://www.linkedin.com/company/medusajs)
 - [Medusa Blog](https://medusajs.com/blog/)
+
+---
+
+## Разработка
+
+Зависимости ставятся через `npm ci` — `package-lock.json` в репозитории должен
+оставаться согласованным.
+
+**Важно:** npm версий 11.0–11.3 генерирует для дерева зависимостей Medusa 2.19
+битый lock: он сам же потом отвергается командой `npm ci` с ошибкой про
+`ajv-formats` и `picomatch`, и сборка в Docker падает. Если после `npm install`
+`npm ci` перестал работать — обнови npm:
+
+```bash
+npm i -g npm@11.19.1
+rm -rf node_modules package-lock.json
+npm install
+npm ci --dry-run   # должно пройти без ошибок
+```
+
+### Полезные команды
+
+```bash
+npm run dev            # локальный запуск
+npm run seed           # первичное наполнение пустой базы
+npm run sync-search    # полная переиндексация поиска
+```
