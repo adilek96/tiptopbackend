@@ -77,5 +77,16 @@ module.exports = defineConfig({
         indexName: process.env.MEILISEARCH_INDEX || "products",
       },
     },
+    {
+      // Импорт товара по тексту, скопированному с Taobao / Amazon / Alibaba.
+      // Без ключа модуль не отключает импорт целиком: фото переносятся,
+      // а описание берётся из вставленного текста как есть.
+      resolve: "./src/modules/product-import",
+      options: {
+        apiKey: process.env.DEEPSEEK_API_KEY,
+        baseUrl: process.env.DEEPSEEK_BASE_URL,
+        model: process.env.DEEPSEEK_MODEL,
+      },
+    },
   ],
 })
