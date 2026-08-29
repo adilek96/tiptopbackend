@@ -66,6 +66,17 @@ module.exports = defineConfig({
         ],
       },
     },
+    {
+      // Поиск по каталогу. Готовый плагин для Meilisearch требует Medusa 2.19+,
+      // а здесь 2.0.7, где плагины к тому же не умеют регистрировать модули —
+      // поэтому интеграция сделана обычным модулем проекта.
+      resolve: "./src/modules/meilisearch",
+      options: {
+        host: process.env.MEILISEARCH_HOST,
+        apiKey: process.env.MEILISEARCH_API_KEY,
+        indexName: process.env.MEILISEARCH_INDEX || "products",
+      },
+    },
     // Модуль variant-image отключён: он не запускается.
     //
     // 1. В конструкторе сервиса awilix передаёт прокси, поэтому
