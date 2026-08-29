@@ -1,7 +1,7 @@
-# Medusa 2.0.7. Сборка кладёт результат в .medusa/server вместе с
+# Medusa 2.19. Сборка кладёт результат в .medusa/server вместе с
 # package.json и package-lock.json — оттуда ставим только прод-зависимости.
 
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
 COPY package.json package-lock.json ./
@@ -10,7 +10,7 @@ COPY . .
 # Собирает и бэкенд (tsc), и админку (vite) в .medusa/server/public/admin
 RUN npx medusa build
 
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 RUN apk add --no-cache libc6-compat curl
 ENV NODE_ENV=production
