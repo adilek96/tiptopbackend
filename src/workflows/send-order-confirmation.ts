@@ -39,25 +39,34 @@ const step1 = createStep(
 
 //    создаем шаг второй. тут будет происходить отправка уведомления в  телеграм
 
+// Идентификаторы способов доставки берутся из окружения: при пересоздании
+// базы Medusa выдаёт новые, и зашивать их в код нельзя. Значения печатает
+// сид-скрипт (src/scripts/seed.ts).
+const METRO_OPTION_ID = process.env.SHIPPING_OPTION_METRO_ID;
+const CITY_OPTION_ID = process.env.SHIPPING_OPTION_CITY_ID;
+const COUNTRY_OPTION_ID = process.env.SHIPPING_OPTION_COUNTRY_ID;
+
 const step2 = createStep("step-2", async (data:any) => {
-    
+
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
+    const shipping = data.data.result.shipping_methods[0];
+    const optionId = shipping.shipping_option_id;
     const messageForMe = `🌟*Пользователь оформил заказ*🌟
 
 **ID заказа:** *${data.data.result.id}*
-**Имя клиента:** *${data.data.result.shipping_methods[0].data.consumerName} ${data.data.result.shipping_methods[0].data.consumerLastName}*
-${data.data.result.shipping_methods[0].shipping_option_id !== "so_01JCKDY5CCK7FZ47AXVY1GQ7AF" ? `**Дата и время доставки:** *${data.data.result.shipping_methods[0].data.deliveryDate}, ${data.data.result.shipping_methods[0].data.deliveryTime}*` : ""}
-**Телефон клиента:** *${data.data.result.shipping_methods[0].data.consumerPhone}*
-**Метод доставки:** *${data.data.result.shipping_methods[0].name}*
-${data.data.result.shipping_methods[0].shipping_option_id === "so_01JCKDR1NYHC7BEC8P104PBH7Z" ? `**Станция метро:** *${data.data.result.shipping_methods[0].data.metroStation}*` : ""}
-${data.data.result.shipping_methods[0].shipping_option_id === "so_01JCKDSGCDMWBBZQWQ2VQ7NNY2" ? `**Адрес доставки:** *${data.data.result.shipping_methods[0].data.address}*` : ""}
-${data.data.result.shipping_methods[0].shipping_option_id === "so_01JCKDY5CCK7FZ47AXVY1GQ7AF" ? `**Город:** *${data.data.result.shipping_methods[0].data.city}*\n**Адрес доставки:** *${data.data.result.shipping_methods[0].data.address}*` : ""}`;
+**Имя клиента:** *${shipping.data.consumerName} ${shipping.data.consumerLastName}*
+${optionId !== COUNTRY_OPTION_ID ? `**Дата и время доставки:** *${shipping.data.deliveryDate}, ${shipping.data.deliveryTime}*` : ""}
+**Телефон клиента:** *${shipping.data.consumerPhone}*
+**Метод доставки:** *${shipping.name}*
+${optionId === METRO_OPTION_ID ? `**Станция метро:** *${shipping.data.metroStation}*` : ""}
+${optionId === CITY_OPTION_ID ? `**Адрес доставки:** *${shipping.data.address}*` : ""}
+${optionId === COUNTRY_OPTION_ID ? `**Город:** *${shipping.data.city}*\n**Адрес доставки:** *${shipping.data.address}*` : ""}`;
 
-    
 
-    
-      fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+
+
+      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -74,8 +83,9 @@ ${data.data.result.shipping_methods[0].shipping_option_id === "so_01JCKDY5CCK7FZ
           }
           return response.json();
         })
-        .then(data => console.log("Сообщение отправлено:"))
-        .catch(error => console.error("Ошибка:", error));
+        .then(() => console.log("Уведомление о заказе отправлено в Telegram"))
+        // Заказ не должен падать из-за недоступности Telegram — только лог.
+        .catch(error => console.error("Не удалось отправить уведомление:", error));
   
 
  

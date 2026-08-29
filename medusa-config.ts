@@ -1,4 +1,5 @@
 import { loadEnv, defineConfig } from '@medusajs/framework/utils'
+import { VARIANT_IMAGE_MODULE } from './src/modules/variant-image'
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
@@ -64,6 +65,9 @@ module.exports = defineConfig({
           },
         ],
       },
+    },
+    {
+      resolve: "./src/modules/variant-image",
     },
   ],
 })
