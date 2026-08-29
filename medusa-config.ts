@@ -1,5 +1,4 @@
 import { loadEnv, defineConfig } from '@medusajs/framework/utils'
-// import { VARIANT_IMAGE_MODULE } from './src/modules/variant-image'
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
@@ -67,9 +66,10 @@ module.exports = defineConfig({
       },
     },
     {
-      // Поиск по каталогу. Готовый плагин для Meilisearch требует Medusa 2.19+,
-      // а здесь 2.0.7, где плагины к тому же не умеют регистрировать модули —
-      // поэтому интеграция сделана обычным модулем проекта.
+      // Поиск по каталогу. Интеграция сделана своим модулем, а не готовым
+      // плагином: он появился, когда проект был на 2.0.7 и плагин туда
+      // не ставился, и был сознательно оставлен при переходе на 2.19 —
+      // меньше зависимостей и полный контроль над схемой индекса.
       resolve: "./src/modules/meilisearch",
       options: {
         host: process.env.MEILISEARCH_HOST,
@@ -77,20 +77,5 @@ module.exports = defineConfig({
         indexName: process.env.MEILISEARCH_INDEX || "products",
       },
     },
-    // Модуль variant-image отключён: он не запускается.
-    //
-    // 1. В конструкторе сервиса awilix передаёт прокси, поэтому
-    //    container.resolve(...) ищет регистрацию с именем "resolve"
-    //    и валит загрузку всего приложения.
-    // 2. Даже если это починить, сервис вызывает у файлового модуля
-    //    методы update/list/delete, которых в Medusa 2.0 нет
-    //    (есть createFiles/deleteFiles/retrieveFile/listFiles), а метаданные
-    //    у файлов не хранятся вовсе.
-    //
-    // Рабочий вариант — держать ссылку на картинку в metadata самой вариации
-    // товара, а не в метаданных файла. Это переделка, а не правка одной строки.
-    // {
-    //   resolve: "./src/modules/variant-image",
-    // },
   ],
 })
