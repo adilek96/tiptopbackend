@@ -50,7 +50,13 @@ export type PriceBookRow = {
  */
 export async function storeCurrency(container: MedusaContainer): Promise<string> {
   const storeModuleService = container.resolve(Modules.STORE)
-  const [store] = await storeModuleService.listStores()
+  // Валюты — связанная сущность, и без явного relations модуль магазина
+  // их не отдаёт: supported_currencies приходит пустым, а магазин
+  // выглядит как магазин без валюты.
+  const [store] = await storeModuleService.listStores(
+    {},
+    { relations: ["supported_currencies"] }
+  )
 
   const currencyCode =
     store?.supported_currencies?.find((currency: any) => currency.is_default)?.currency_code ??

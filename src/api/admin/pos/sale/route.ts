@@ -80,7 +80,13 @@ export async function POST(
   const salesChannelModuleService = req.scope.resolve(Modules.SALES_CHANNEL)
   const stockLocationModuleService = req.scope.resolve(Modules.STOCK_LOCATION)
 
-  const [store] = await storeModuleService.listStores()
+  // Валюты — связанная сущность, и без явного relations модуль магазина
+  // их не отдаёт: supported_currencies приходит пустым, а магазин
+  // выглядит как магазин без валюты.
+  const [store] = await storeModuleService.listStores(
+    {},
+    { relations: ["supported_currencies"] }
+  )
   const regionId = store?.default_region_id
   const currencyCode =
     store?.supported_currencies?.find((c: any) => c.is_default)?.currency_code ??

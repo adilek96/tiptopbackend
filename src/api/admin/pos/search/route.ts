@@ -50,7 +50,13 @@ export async function GET(req: MedusaRequest, res: MedusaResponse): Promise<void
   const productModuleService = req.scope.resolve(Modules.PRODUCT)
   const storeModuleService = req.scope.resolve(Modules.STORE)
 
-  const [store] = await storeModuleService.listStores()
+  // Валюты — связанная сущность, и без явного relations модуль магазина
+  // их не отдаёт: supported_currencies приходит пустым, а магазин
+  // выглядит как магазин без валюты.
+  const [store] = await storeModuleService.listStores(
+    {},
+    { relations: ["supported_currencies"] }
+  )
   const regionId = store?.default_region_id
   const currencyCode =
     store?.supported_currencies?.find((c: any) => c.is_default)?.currency_code ??
