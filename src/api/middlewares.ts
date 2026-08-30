@@ -1,4 +1,30 @@
 import { defineMiddlewares } from "@medusajs/framework/http"
+import type {
+  MedusaNextFunction,
+  MedusaRequest,
+  MedusaResponse,
+} from "@medusajs/framework/http"
+
+/**
+ * Ответ штатным экранам прайс-листов Medusa.
+ *
+ * Цены заводятся в разделе «Прайс-листы»: там у скидочной цены рядом
+ * стоят закупочная и основная, а участие товара в акции решает тумблер
+ * «Со скидкой» в его карточке. Лист, созданный штатным экраном, ничего
+ * этого не знает: цены в нём действовали бы у всех товаров подряд, мимо
+ * тумблера. Поэтому изменения закрыты.
+ */
+function priceListsAreReadOnly(
+  _req: MedusaRequest,
+  res: MedusaResponse,
+  _next: MedusaNextFunction
+): void {
+  res.status(409).json({
+    message:
+      "Прайс-листы заводятся в разделе «Прайс-листы»: там у цены есть закупочная, " +
+      "основная и тумблер «Со скидкой» у товара.",
+  })
+}
 
 export default defineMiddlewares({
   routes: [
@@ -37,6 +63,32 @@ export default defineMiddlewares({
       matcher: "/admin/pos/sale",
       methods: ["POST"],
       policies: [{ resource: "pos", operation: "create" }],
+    },
+
+    /**
+     * Прайс-книга. Закупочная цена — коммерческая тайна магазина, и
+     * видеть её должен не всякий, кто вошёл в админку: без объявленной
+     * политики маршрут открыт в том числе кассиру.
+     */
+    {
+      matcher: "/admin/price-book*",
+      methods: ["GET"],
+      policies: [{ resource: "price_book", operation: "read" }],
+    },
+    {
+      matcher: "/admin/price-book*",
+      methods: ["POST", "DELETE"],
+      policies: [{ resource: "price_book", operation: "write" }],
+    },
+
+    /**
+     * Штатные прайс-листы Medusa — только на чтение: чтение нужно самой
+     * админке, а создание и изменение живут в разделе «Прайс-листы».
+     */
+    {
+      matcher: "/admin/price-lists*",
+      methods: ["POST", "DELETE"],
+      middlewares: [priceListsAreReadOnly],
     },
   ],
 })
