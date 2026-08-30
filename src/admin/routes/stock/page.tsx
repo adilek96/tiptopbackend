@@ -116,8 +116,42 @@ const StockPage = () => {
   const [saving, setSaving] = useState<Set<string>>(new Set())
   const [saved, setSaved] = useState<Set<string>>(new Set())
 
+  // Склад, на который заводится остаток вариации, у которой его ещё нет.
+  const [locationId, setLocationId] = useState<string | null>(null)
+
   const termRef = useRef(term)
   termRef.current = term
+
+  /**
+   * Склад магазина.
+   *
+   * Нужен, чтобы завести строку остатка там, где её ещё нет. Склад в
+   * магазине один, поэтому берём первый: появится второй — выбор придётся
+   * делать явно, иначе остаток уедет не туда.
+   */
+  useEffect(() => {
+    let cancelled = false
+
+    const loadLocation = async () => {
+      try {
+        const response = await fetch("/admin/stock-locations", { credentials: "include" })
+        const data = await response.json()
+
+        if (!cancelled && response.ok) {
+          setLocationId(data?.stock_locations?.[0]?.id ?? null)
+        }
+      } catch {
+        // Без склада остаток просто не завести — страница скажет об этом
+        // в строке вариации.
+      }
+    }
+
+    loadLocation()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const load = useCallback(async (query: string) => {
     setLoading(true)
@@ -175,7 +209,10 @@ const StockPage = () => {
 
   const save = async (variant: Variant) => {
     const level = variant.levels[0]
-    if (!variant.inventory_item_id || !level) {
+    // Пока строки остатка нет, её надо завести — на складе магазина.
+    const target = level?.location_id ?? locationId
+
+    if (!variant.inventory_item_id || !target) {
       return
     }
 
@@ -189,20 +226,37 @@ const StockPage = () => {
     setError(null)
 
     try {
-      const response = await fetch(
-        `/admin/inventory-items/${variant.inventory_item_id}/location-levels/${level.location_id}`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ stocked_quantity: quantity }),
-        }
-      )
+      // Товар из импорта приезжает со складской позицией, но без строки
+      // остатка: её Medusa заводит не при создании товара, а когда
+      // остаток впервые проставили. Поэтому первое сохранение создаёт
+      // строку, а все следующие правят её.
+      const base = `/admin/inventory-items/${variant.inventory_item_id}/location-levels`
+      const response = await fetch(level ? `${base}/${target}` : base, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          level
+            ? { stocked_quantity: quantity }
+            : { location_id: target, stocked_quantity: quantity }
+        ),
+      })
       const data = await response.json()
 
       if (!response.ok) {
         setError(data?.message ?? "Не удалось сохранить остаток")
         return
+      }
+
+      // У заведённой строки появился свой id — он приходит в ответе.
+      const created: Level = {
+        id:
+          (data?.inventory_item?.location_levels ?? []).find(
+            (l: any) => l.location_id === target
+          )?.id ?? "",
+        location_id: target,
+        stocked_quantity: quantity,
+        reserved_quantity: 0,
       }
 
       setProducts((current) =>
@@ -215,9 +269,11 @@ const StockPage = () => {
               ? {
                   ...v,
                   stocked: quantity,
-                  levels: v.levels.map((l, i) =>
-                    i === 0 ? { ...l, stocked_quantity: quantity } : l
-                  ),
+                  levels: v.levels.length
+                    ? v.levels.map((l, i) =>
+                        i === 0 ? { ...l, stocked_quantity: quantity } : l
+                      )
+                    : [created],
                 }
               : v
           )
@@ -344,10 +400,12 @@ const StockPage = () => {
                           const draft = drafts[variant.id]
                           const changed =
                             draft !== undefined && Number(draft) !== variant.stocked
+                          // Вариация без строки остатка тоже правится:
+                          // первое сохранение эту строку и заведёт.
                           const editable =
                             variant.manage_inventory &&
                             variant.inventory_item_id &&
-                            variant.levels.length > 0
+                            (variant.levels.length > 0 || locationId)
 
                           return (
                             <li
@@ -397,9 +455,11 @@ const StockPage = () => {
                                 </>
                               ) : (
                                 <Text size="small" className="text-ui-fg-muted">
-                                  {variant.manage_inventory
-                                    ? "нет позиции на складе"
-                                    : "учёт остатков выключен"}
+                                  {!variant.manage_inventory
+                                    ? "учёт остатков выключен"
+                                    : variant.inventory_item_id
+                                      ? "склад не заведён"
+                                      : "нет позиции на складе"}
                                 </Text>
                               )}
                             </li>
