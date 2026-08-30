@@ -100,8 +100,9 @@ function toProduct(raw: any): Product {
  * в таком списке тяжело. Здесь строка — это товар, а вариации со своими
  * остатками раскрываются по клику.
  *
- * Своих маршрутов на бэкенде страница не заводит: и чтение, и правка
- * остатка делаются штатными эндпоинтами ядра.
+ * Читает страница штатными эндпоинтами ядра, а пишет через собственный
+ * /admin/stock/level: штатные маршруты остатков закрыты на запись, чтобы
+ * остаток нельзя было поправить в обход этого раздела.
  */
 const StockPage = () => {
   const [term, setTerm] = useState("")
@@ -226,20 +227,22 @@ const StockPage = () => {
     setError(null)
 
     try {
-      // Товар из импорта приезжает со складской позицией, но без строки
-      // остатка: её Medusa заводит не при создании товара, а когда
-      // остаток впервые проставили. Поэтому первое сохранение создаёт
-      // строку, а все следующие правят её.
-      const base = `/admin/inventory-items/${variant.inventory_item_id}/location-levels`
-      const response = await fetch(level ? `${base}/${target}` : base, {
+      // Пишем через свой маршрут: штатные /admin/inventory-items* закрыты
+      // на запись, чтобы остаток нельзя было поправить мимо этого раздела.
+      //
+      // Заводить строку остатка или править существующую, решает сам
+      // маршрут: товар из импорта приезжает со складской позицией, но без
+      // строки остатка — её Medusa создаёт не при создании товара, а когда
+      // остаток впервые проставили.
+      const response = await fetch("/admin/stock/level", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          level
-            ? { stocked_quantity: quantity }
-            : { location_id: target, stocked_quantity: quantity }
-        ),
+        body: JSON.stringify({
+          inventory_item_id: variant.inventory_item_id,
+          location_id: target,
+          stocked_quantity: quantity,
+        }),
       })
       const data = await response.json()
 
@@ -250,13 +253,10 @@ const StockPage = () => {
 
       // У заведённой строки появился свой id — он приходит в ответе.
       const created: Level = {
-        id:
-          (data?.inventory_item?.location_levels ?? []).find(
-            (l: any) => l.location_id === target
-          )?.id ?? "",
+        id: data?.level?.id ?? "",
         location_id: target,
         stocked_quantity: quantity,
-        reserved_quantity: 0,
+        reserved_quantity: Number(data?.level?.reserved_quantity ?? 0),
       }
 
       setProducts((current) =>

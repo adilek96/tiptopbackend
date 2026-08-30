@@ -15,6 +15,7 @@
     "seed": "medusa exec ./src/scripts/seed.ts",
     "sync-search": "medusa exec ./src/scripts/sync-search.ts",
     "setup-roles": "medusa exec ./src/scripts/setup-roles.ts",
+    "hide-core-sections": "medusa exec ./src/scripts/hide-core-sections.ts",
     "start": "medusa start",
     "dev": "medusa develop",
     "test:integration:http": "TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",

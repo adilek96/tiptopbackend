@@ -26,6 +26,36 @@ function priceListsAreReadOnly(
   })
 }
 
+/**
+ * Ответ штатным экранам остатков Medusa.
+ *
+ * Остаток проставляется в разделе «Склад»: там строка — это товар со
+ * своими вариациями, а не безымянная складская позиция. Штатный экран
+ * Inventory правит ту же строку в обход раздела, поэтому запись закрыта,
+ * а раздел «Склад» ходит в собственный /admin/stock/level.
+ *
+ * Списания при продаже это не касается: отгрузка заказа идёт рабочим
+ * процессом ядра и до HTTP-маршрутов не доходит.
+ */
+function inventoryIsReadOnly(
+  req: MedusaRequest,
+  res: MedusaResponse,
+  next: MedusaNextFunction
+): void {
+  // Выгрузка остатков в файл — это чтение, хотя маршрут и POST. Запрещать
+  // её незачем, а продавцу она нужна для сверки на складе.
+  if (req.path.endsWith("/export")) {
+    next()
+    return
+  }
+
+  res.status(409).json({
+    message:
+      "Остатки проставляются в разделе «Склад»: там видно товар целиком, " +
+      "а не отдельную складскую позицию.",
+  })
+}
+
 export default defineMiddlewares({
   routes: [
     {
@@ -82,6 +112,17 @@ export default defineMiddlewares({
     },
 
     /**
+     * Склад. Свой маршрут правки остатка — взамен закрытых ниже штатных.
+     * Кассиру остатки менять незачем, поэтому нужна политика: без неё
+     * маршрут открыт всякому, кто вошёл в админку.
+     */
+    {
+      matcher: "/admin/stock/level",
+      methods: ["POST"],
+      policies: [{ resource: "stock", operation: "write" }],
+    },
+
+    /**
      * Штатные прайс-листы Medusa — только на чтение: чтение нужно самой
      * админке, а создание и изменение живут в разделе «Прайс-листы».
      */
@@ -89,6 +130,26 @@ export default defineMiddlewares({
       matcher: "/admin/price-lists*",
       methods: ["POST", "DELETE"],
       middlewares: [priceListsAreReadOnly],
+    },
+
+    /**
+     * Штатные остатки и резервы Medusa — только на чтение. Чтение нужно
+     * самой админке (и разделу «Склад», он читает остатки вместе с
+     * товарами), а запись идёт через /admin/stock/level.
+     *
+     * Под matcher попадают и пакетные маршруты — /admin/inventory-items/
+     * location-levels/batch и его вариант внутри позиции: правка остатка
+     * из карточки товара шла бы именно туда.
+     */
+    {
+      matcher: "/admin/inventory-items*",
+      methods: ["POST", "DELETE"],
+      middlewares: [inventoryIsReadOnly],
+    },
+    {
+      matcher: "/admin/reservations*",
+      methods: ["POST", "DELETE"],
+      middlewares: [inventoryIsReadOnly],
     },
   ],
 })
