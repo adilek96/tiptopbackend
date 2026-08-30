@@ -25,7 +25,12 @@
     "@medusajs/admin-sdk": "2.19.0",
     "@medusajs/cli": "2.19.0",
     "@medusajs/framework": "2.19.0",
-    "@medusajs/medusa": "2.19.0"
+    "@medusajs/icons": "2.19.0",
+    "@medusajs/js-sdk": "2.19.0",
+    "@medusajs/medusa": "2.19.0",
+    "@medusajs/ui": "4.2.1",
+    "@rsc-labs/medusa-store-analytics-v2": "^0.1.9",
+    "medusa-variant-images": "^1.1.4"
   },
   "devDependencies": {
     "@medusajs/test-utils": "2.19.0",
@@ -46,5 +51,10 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "overrides": {
+    "@rsc-labs/medusa-store-analytics-v2": {
+      "@medusajs/ui": "4.2.1"
+    }
   }
 }

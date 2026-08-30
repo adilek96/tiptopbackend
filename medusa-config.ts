@@ -30,8 +30,31 @@ module.exports = defineConfig({
   // после первого деплоя с этим флагом — иначе админка окажется пустой.
   featureFlags: {
     rbac: true,
+    // Переводы контента. В Medusa помечены как экспериментальные: набор
+    // переводимых полей ещё меняется от версии к версии.
+    translation: true,
   },
+  plugins: [
+    {
+      // Своя обложка и свой набор картинок для каждой вариации товара.
+      // Плагин хранит их в metadata вариации, поэтому витрина обязана
+      // запрашивать поле metadata явно — см. app/services витрины.
+      resolve: "medusa-variant-images",
+      options: {},
+    },
+    {
+      // Раздел «Analytics» в админке: продажи, заказы, покупатели.
+      // Настроек нет, всё задаётся в интерфейсе.
+      resolve: "@rsc-labs/medusa-store-analytics-v2",
+      options: {},
+    },
+  ],
   modules: [
+    {
+      // Переводы названий и описаний товаров. Магазин русскоязычный,
+      // азербайджанская версия добавляется через админку без правки кода.
+      resolve: "@medusajs/medusa/translation",
+    },
     {
       resolve: "@medusajs/medusa/cache-redis",
       options: {
