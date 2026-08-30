@@ -20,6 +20,11 @@ export type PosVariant = {
   thumbnail: string | null
   unit_price: number | null
   currency_code: string | null
+  /**
+   * Свободный остаток. null — товар без учёта остатков: продавать можно
+   * всегда, и показывать кассиру нечего.
+   */
+  stock: number | null
 }
 
 /**
@@ -98,6 +103,8 @@ export async function GET(req: MedusaRequest, res: MedusaResponse): Promise<void
       "variants.barcode",
       "variants.calculated_price.calculated_amount",
       "variants.calculated_price.currency_code",
+      "variants.manage_inventory",
+      "variants.inventory_items.inventory_item_id",
     ],
     filters: { id: productIds },
     context: {
@@ -109,6 +116,42 @@ export async function GET(req: MedusaRequest, res: MedusaResponse): Promise<void
       },
     },
   })
+
+  // --- Остатки --------------------------------------------------------------
+
+  // Кассиру важно видеть, есть ли товар на полке. Считаем свободный остаток:
+  // из складского запаса вычитаем то, что уже зарезервировано под заказы
+  // с сайта, иначе касса продаст то, что вечером уедет курьеру.
+  const inventoryItemIds = new Set<string>()
+
+  for (const product of products) {
+    for (const variant of (product.variants ?? []) as any[]) {
+      for (const link of variant.inventory_items ?? []) {
+        if (link?.inventory_item_id) {
+          inventoryItemIds.add(link.inventory_item_id)
+        }
+      }
+    }
+  }
+
+  const availableByItem = new Map<string, number>()
+
+  if (inventoryItemIds.size) {
+    const inventoryModuleService = req.scope.resolve(Modules.INVENTORY)
+    const levels = await inventoryModuleService.listInventoryLevels(
+      { inventory_item_id: [...inventoryItemIds] },
+      { take: null }
+    )
+
+    for (const level of levels) {
+      const available =
+        Number(level.stocked_quantity ?? 0) - Number(level.reserved_quantity ?? 0)
+      availableByItem.set(
+        level.inventory_item_id,
+        (availableByItem.get(level.inventory_item_id) ?? 0) + available
+      )
+    }
+  }
 
   const variants: PosVariant[] = []
 
@@ -125,7 +168,18 @@ export async function GET(req: MedusaRequest, res: MedusaResponse): Promise<void
         continue
       }
 
+      // Вариант может лежать на нескольких складах — кассира интересует
+      // общий свободный остаток.
+      let stock: number | null = null
+      if (variant.manage_inventory) {
+        stock = 0
+        for (const link of variant.inventory_items ?? []) {
+          stock += availableByItem.get(link?.inventory_item_id) ?? 0
+        }
+      }
+
       variants.push({
+        stock,
         variant_id: variant.id,
         product_id: product.id,
         product_title: product.title,

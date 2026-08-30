@@ -19,5 +19,24 @@ export default defineMiddlewares({
       methods: ["POST"],
       bodyParser: { sizeLimit: "60mb" },
     },
+
+    /**
+     * Касса. Ресурс pos придуман нами: политики в Medusa — это обычные
+     * строки resource/operation, поэтому своя область прав заводится без
+     * изменений в ядре.
+     *
+     * Роли раздаёт src/scripts/setup-roles.ts. Проверка включается только
+     * при включённом флаге rbac — без него policies просто игнорируются.
+     */
+    {
+      matcher: "/admin/pos/search",
+      methods: ["GET"],
+      policies: [{ resource: "pos", operation: "read" }],
+    },
+    {
+      matcher: "/admin/pos/sale",
+      methods: ["POST"],
+      policies: [{ resource: "pos", operation: "create" }],
+    },
   ],
 })
