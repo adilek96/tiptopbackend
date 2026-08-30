@@ -4,9 +4,6 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
-# Без этого medusa build собирает админку в режиме разработки: React идёт
-# отладочной сборкой, а в интерфейсе висит пометка про developer mode.
-ENV NODE_ENV=production
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
